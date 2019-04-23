@@ -142,48 +142,38 @@ recurse_on_position_at_level_1 <- function(closures, string_list=list("")) {
       environment(closures[[1]])$maxed <- TRUE
     }  
     new_string <- recurse_on_levels_at_this_position(closures, char_level1)
-    string_list <- c( string_list, new_string )
-    
+    if ( (is.list(string_list) & (string_list[[1]] == "")) |
+         (is.character(string_list) & string_list[1] == "")) {
+      string_list <- new_string
+    } else {
+      string_list <- c( string_list, new_string )
+    }
     # recursive case
     recurse_on_position_at_level_1( closures, string_list )
   }
 }
 
 
-
-
-# should return a vector of character strings when the last digit is visited
-# recurse_on_digits_for_character_strings <- function( a_vec_of_digits ) {
-#   num_of_digits_to_visit <- length( a_vec_of_digits )
-#   vec_of_strings <- to_vector_of_target_characters( a_vec_of_digits ) # ("0"="+","1"="","2"="abc","9"="wxyz")
-#   level_closures <- lapply( X = vec_of_strings, FUN = function( level_string ) level_visitor( level_string ) )
-#   string_test <- recurse_on_position_at_level_1( level_closures, 1, "")
-# 
-#   vec_of_strings
-# }
-
-
 to_vector_of_strings <- function(aStrigOfDigits) {
   vector_of_digits <- to_vector_of_digits_from_string(aStrigOfDigits)
   vec_of_level_strings <- to_vector_of_target_characters( vector_of_digits )
   level_closures <- lapply(X = vec_of_level_strings, FUN = function(level_string ) level_visitor( level_string ))
-  
-  recurse_on_position_at_level_1(level_closures, list(""))
+  recurse_on_position_at_level_1(level_closures)
 }
 
 
 
 
 # tests
-testf <- level_visitor("abc")
-testf(1,"")
-testf(2,"a")
-testf(3,"ab")
-testf(4, "abc")
+vos1 <- to_vector_of_strings("92")
+vos2 <- to_vector_of_strings("12")
+vos3 <- to_vector_of_strings("234")
+print(vos1)
+print(vos2)
+print(vos3)
+
 vec_of_strings <- to_vector_of_strings("92")
-
-print( vec_of_strings )
-
+print(vec_of_strings)
 level_funs_test <- lapply(vec_of_strings, FUN = function(level_string) level_visitor(level_string))
 level_funs_test[[1]](1,"")
 p2 <- environment( level_funs_test[[2]] )$position
