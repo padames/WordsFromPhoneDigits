@@ -76,9 +76,9 @@ is_maxed <- function(closure) {
 # Helpers:
 #=========================
 
-level_is_maxed <- function(closures, level) {
-  pos <- environment(closures[[level]])$position_at_level_string
-  level_size <- environment(closures[[level]])$level_size
+level_is_maxed <- function(closure) {
+  pos <- environment(closure)$position_at_level_string
+  level_size <- environment(closure)$level_size
   pos >= level_size
 }
 
@@ -87,9 +87,9 @@ get_new_cur_string <- function(closure, carry_string) {
   closure(carry_string)
 }
 
-get_next_char <- function(closures, level) {
-  str_level <- environment( closures[[level]] )$level_string
-  pos_level <- environment( closures[[level]] )$position_at_level_string
+get_next_char <- function(closure) {
+  str_level <- environment( closure )$level_string
+  pos_level <- environment( closure )$position_at_level_string
   str_sub(str_level, pos_level, pos_level )
 }
 
@@ -101,14 +101,18 @@ add_to_string_list <- function(string_list, cur_string) {
   }
 }
 
-decrease_pos_in_level <- function(closures, level) {
-  cur_pos <- environment(closures[[level]])$position_at_level_string
-  environment(closures[[level]])$position_at_level_string <- cur_pos - 1
+decrease_pos_in_level <- function(closure) {
+  cur_pos <- environment(closure)$position_at_level_string
+  environment(closure)$position_at_level_string <- cur_pos - 1
 }
 
-increase_pos_in_level <- function(closures, level) {
-  cur_pos <- environment(closures[[level]])$position_at_level_string
-  environment(closures[[level]])$position_at_level_string <- cur_pos + 1
+increase_pos_in_level <- function(closure) {
+  cur_pos <- environment(closure)$position_at_level_string
+  environment(closure)$position_at_level_string <- cur_pos + 1
+}
+
+set_pos_in_level_to_one <- function(closure) {
+  environment(closure)$position_at_level_string <- 1
 }
 
 trim_first_empty_from_string_list <- function(string_list) {
@@ -194,7 +198,7 @@ recurse_on_position_at_level <- function(closures, string_list, level, cur_strin
   # compute this level's state
   last_level_reached <- (level == length(closures))
   if (advance_position) {
-    increase_pos_in_level(closures, level)
+    increase_pos_in_level(closures[[level]])
   }
   last_char_in_level_string_reached = is_maxed(closures[[level]])
   first_level_reached <- (level == 1L)
@@ -204,20 +208,20 @@ recurse_on_position_at_level <- function(closures, string_list, level, cur_strin
   } else 
   # CASE 5
   if (last_level_reached & !advance_position & first_level_reached) { # length of the closure stack must be 1
-    cur_string <- get_next_char(closures, level)
+    cur_string <- get_next_char(closures[[level]])
     string_list <- add_to_string_list(string_list, cur_string)
     final_string_list <- recurse_on_position_at_level(closures, string_list, level = 1, cur_string = "", advance_position = T)
     return(trim_first_empty_from_string_list(final_string_list))
   } else
   # CASE 1
   if (last_level_reached & advance_position & last_char_in_level_string_reached & first_level_reached) {
-    cur_string <- get_next_char(closures, level)
+    cur_string <- get_next_char(closures[[level]])
     string_list <- add_to_string_list(string_list, cur_string)
     return(string_list) # the bottom clause for the case of one level in the closure stack
   } else
   # CASE 3
   if (last_level_reached & advance_position & !last_char_in_level_string_reached & first_level_reached) {
-    cur_string <- get_next_char(closures, level)
+    cur_string <- get_next_char(closures[[level]])
     string_list <- add_to_string_list(string_list, cur_string)
     recurse_on_position_at_level(closures, string_list, level = level, cur_string = "", advance_position = T)
   } else
@@ -227,13 +231,14 @@ recurse_on_position_at_level <- function(closures, string_list, level, cur_strin
   } else
   # CASE 6: A=Y     B=N     C=Y    D=N 
   if (last_level_reached & !advance_position & last_char_in_level_string_reached & !first_level_reached) {
-    cur_string <- get_next_char(closures, level)
+    cur_string <- get_next_char(closures[[level]])
     string_list <- add_to_string_list(string_list, cur_string)
-    cur_string <- str_sub(cur_string, 1, -2)
-    recurse_on_position_at_level(closures, string_list, level = level, cur_string = "", advance_position = T)
+    set_pos_in_level_to_one(closures[[level]])
+    cur_string <- str_sub(cur_string, 1, -3) # last two characters removed
+    recurse_on_position_at_level(closures, string_list, level = level - 1, cur_string = cur_string, advance_position = T)
   } else
   
-  # CASE 7  
+  # CASE 7: A=Y     B=N     C=N    D=N  
   if (last_level_reached & !advance_position & !last_char_in_level_string_reached & !first_level_reached) {
     
   } else
@@ -243,12 +248,12 @@ recurse_on_position_at_level <- function(closures, string_list, level, cur_strin
     
   } else
   
-  # CASE 10:  N     Y     N  (Y|N)
+  # CASE 10:  A=N     B=Y     C=N  D=(Y|N)
   if (!last_level_reached & advance_position & !last_char_in_level_string_reached ) { 
     
   } else
   
-  # CASE 11: N     N  (Y|N) (Y|N)
+  # CASE 11: A=N     B=N  C=(Y|N) D=(Y|N)
   if (!last_level_reached & !advance_position) {
     
   }
@@ -276,7 +281,7 @@ to_vector_of_strings <- function(aStrigOfDigits) {
 #print(vos3)
 
 #s_to_parse <- "43957"
-s_to_parse <- "71"
+s_to_parse <- "9"
 print(paste0("Entering ", s_to_parse))
 vos4 <- to_vector_of_strings(s_to_parse)
 print(vos4)
