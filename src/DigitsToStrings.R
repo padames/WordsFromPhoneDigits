@@ -93,6 +93,11 @@ get_next_char <- function(closure) {
   str_sub(str_level, pos_level, pos_level )
 }
 
+add_cur_char_to_cur_string <- function(closure, cur_string) {
+  next_char <- get_next_char(closure)
+  paste0(cur_string, next_char)
+}
+
 add_to_string_list <- function(string_list, cur_string) {
   if (cur_string != "") { 
     c(string_list, cur_string)
@@ -208,57 +213,60 @@ recurse_on_position_at_level <- function(closures, string_list, level, cur_strin
   } else 
   # CASE 5
   if (last_level_reached & !advance_position & first_level_reached) { # length of the closure stack must be 1
-    cur_string <- get_next_char(closures[[level]])
+    cur_string <- add_cur_char_to_cur_string(closures[[level]], cur_string)
     string_list <- add_to_string_list(string_list, cur_string)
     final_string_list <- recurse_on_position_at_level(closures, string_list, level = 1, cur_string = "", advance_position = T)
     return(trim_first_empty_from_string_list(final_string_list))
   } else
   # CASE 1
   if (last_level_reached & advance_position & last_char_in_level_string_reached & first_level_reached) {
-    cur_string <- get_next_char(closures[[level]])
+    cur_string <- add_cur_char_to_cur_string(closures[[level]], cur_string)
     string_list <- add_to_string_list(string_list, cur_string)
     return(string_list) # the bottom clause for the case of one level in the closure stack
   } else
   # CASE 3
   if (last_level_reached & advance_position & !last_char_in_level_string_reached & first_level_reached) {
-    cur_string <- get_next_char(closures[[level]])
+    cur_string <- add_cur_char_to_cur_string(closures[[level]], cur_string)
     string_list <- add_to_string_list(string_list, cur_string)
     recurse_on_position_at_level(closures, string_list, level = level, cur_string = "", advance_position = T)
   } else
-  # CASE 8 Bottom clause of the common case (closures stack size > 1)
+  # CASE 8  A=N   B=Y   C=Y   D=Y  Bottom clause of the common case (closures stack size > 1)
   if (!last_level_reached & advance_position & last_char_in_level_string_reached & first_level_reached) {
-    return(trim_first_empty_from_string_list(final_string_list))
+    return(trim_first_empty_from_string_list(string_list))
   } else
   # CASE 6: A=Y     B=N     C=Y    D=N 
   if (last_level_reached & !advance_position & last_char_in_level_string_reached & !first_level_reached) {
-    cur_string <- get_next_char(closures[[level]])
+    cur_string <- add_cur_char_to_cur_string(closures[[level]], cur_string)
     string_list <- add_to_string_list(string_list, cur_string)
     set_pos_in_level_to_one(closures[[level]])
     cur_string <- str_sub(cur_string, 1, -3) # last two characters removed
-    recurse_on_position_at_level(closures, string_list, level = level - 1, cur_string = cur_string, advance_position = T)
+    recurse_on_position_at_level(closures, string_list, level = (level - 1), cur_string = cur_string, advance_position = T)
   } else
-  
   # CASE 7: A=Y     B=N     C=N    D=N  
   if (last_level_reached & !advance_position & !last_char_in_level_string_reached & !first_level_reached) {
-    
+    cur_string <- add_cur_char_to_cur_string(closures[[level]], cur_string)
+    string_list <- add_to_string_list(string_list, cur_string)
+    increase_pos_in_level(closures[[level]])
+    cur_string <- str_sub(cur_string, 1, -3) # last two characters removed
+    recurse_on_position_at_level(closures, string_list, level = (level - 1), cur_string = cur_string, advance_position = F)
   } else
-  
-  # CASE 9  
+  # CASE 9  A=N     B=Y     C=Y    D=N 
   if (!last_level_reached & advance_position & last_char_in_level_string_reached & !first_level_reached) {
-    
+    set_pos_in_level_to_one(closures[[level]])
+    cur_string <- str_sub(cur_string, 1, -2) # last character removed
+    recurse_on_position_at_level(closures, string_list, level = (level - 1), cur_string = cur_string, advance_position = T)
   } else
-  
   # CASE 10:  A=N     B=Y     C=N  D=(Y|N)
   if (!last_level_reached & advance_position & !last_char_in_level_string_reached ) { 
-    
+    increase_pos_in_level(closures[[level]])
+    cur_string <- add_cur_char_to_cur_string(closures[[level]], cur_string)
+    recurse_on_position_at_level(closures, string_list, level = (level + 1), cur_string = cur_string, advance_position = F)    
   } else
-  
   # CASE 11: A=N     B=N  C=(Y|N) D=(Y|N)
   if (!last_level_reached & !advance_position) {
-    
+    cur_string <- add_cur_char_to_cur_string(closures[[level]], cur_string)
+    recurse_on_position_at_level(closures, string_list, level = (level + 1), cur_string = cur_string, advance_position = F)    
   }
-  
-  ### cur_string <-  get_new_cur_string(closures[[level]], cur_string)
 }
 
 
@@ -281,7 +289,7 @@ to_vector_of_strings <- function(aStrigOfDigits) {
 #print(vos3)
 
 #s_to_parse <- "43957"
-s_to_parse <- "9"
+s_to_parse <- "29"
 print(paste0("Entering ", s_to_parse))
 vos4 <- to_vector_of_strings(s_to_parse)
 print(vos4)
