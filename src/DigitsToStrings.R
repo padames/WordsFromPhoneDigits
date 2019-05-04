@@ -258,7 +258,7 @@ recurse_on_position_at_level <- function(closures, string_list, level, cur_strin
   } else
   # CASE 10:  A=N     B=Y     C=N  D=(Y|N)
   if (!last_level_reached & advance_position & !last_char_in_level_string_reached ) { 
-    increase_pos_in_level(closures[[level]])
+#    increase_pos_in_level(closures[[level]])
     cur_string <- add_cur_char_to_cur_string(closures[[level]], cur_string)
     recurse_on_position_at_level(closures, string_list, level = (level + 1), cur_string = cur_string, advance_position = F)    
   } else
@@ -289,7 +289,7 @@ to_vector_of_strings <- function(aStrigOfDigits) {
 #print(vos3)
 
 #s_to_parse <- "43957"
-s_to_parse <- "29"
+s_to_parse <- "28"
 print(paste0("Entering ", s_to_parse))
 vos4 <- to_vector_of_strings(s_to_parse)
 print(vos4)
