@@ -288,9 +288,9 @@ to_vector_of_strings <- function(aStrigOfDigits) {
 #print(vos2)
 #print(vos3)
 
-options(expressions=10000)
+options(expressions = 500000)
 #s_to_parse <- "43957"
-s_to_parse <- "28394"
+s_to_parse <- "439522"
 print(paste0("Entering ", s_to_parse))
 vos4 <- to_vector_of_strings(s_to_parse)
 print(vos4)
