@@ -128,6 +128,35 @@ trim_first_empty_from_string_list <- function(string_list) {
   }
 }
 
+
+# Recursive helpers
+# Tail-end recursive form: https://community.rstudio.com/t/tidiest-way-to-do-recursion-safely-in-r/1408/2
+trampoline <- function(f) {
+  function(...) {
+    ret <- do.call(f, list(...))
+    while (is.list(ret) && attr(ret, "args")) {
+      ret <- do.call(f, ret)
+    }
+    ret
+  }
+}
+
+recur <- function(...) {
+  args <- list(...)
+  attr(args, "args") <- TRUE
+  args
+}
+
+fact <- trampoline(function(n, prod = 1) {
+  if (n == 0) {
+    prod
+  } else {
+    recur(n - 1, prod*n)
+  }
+})
+number_to_factorial = 50L
+print(paste0("Factorial of ", number_to_factorial, " = ", fact(number_to_factorial)))
+
 #=========================
 # Recursion
 #=========================
@@ -292,6 +321,6 @@ options(expressions = 500000)
 #s_to_parse <- "43957"
 s_to_parse <- "439522"
 print(paste0("Entering ", s_to_parse))
-vos4 <- to_vector_of_strings(s_to_parse)
-print(vos4)
+#vos4 <- to_vector_of_strings(s_to_parse)
+#print(vos4)
 
