@@ -177,8 +177,7 @@ print(paste0("Factorial of ", number_to_factorial, " = ", fact(number_to_factori
 #=========================
 
 ##########################################
-## Function:               'recurse_on_position_at_level'
-## Arguments:
+## Function:               'recurse_digits_to_strings'
 ##   1. closures:          list of closures that store in their environment the state of each level.
 ##                         The list of closures is created applying a list of strings to the function 'closure_creator'
 ##                         Note: a level has a level string, a level_string size, and
@@ -421,6 +420,7 @@ print("----------------------------------------------------------------------")
 vos4 <- to_vector_of_strings(s_to_parse)
 print(vos4)
 
+options(max.print = 50000)
 print("======================================================================")
 print("Testing tail-end recursive version of digit to strings conversion:")
 print(paste0("Entering ", s_to_parse_2))
