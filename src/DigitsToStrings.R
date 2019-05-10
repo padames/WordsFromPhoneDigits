@@ -234,7 +234,7 @@ print(paste0("Factorial of ", number_to_factorial, " = ", fact(number_to_factori
 ##                         | the 'cur_string', call itself with level up by one, the 'cur_string', and the 'advance_position' 
 ##                         | set to FALSE
 ##   ==============================================================================================================================
-recurse_on_position_at_level <- function(closures, string_list, level, cur_string, advance_position=F) {
+recurse_digits_to_strings <- function(closures, string_list, level, cur_string, advance_position=F) {
   # this will determine if we have exhausted all combinations
   if (length(closures) == 0L) { return("") } # the trivial case...nothing to parse
   
@@ -267,7 +267,7 @@ recurse_on_position_at_level <- function(closures, string_list, level, cur_strin
   if (last_level_reached & advance_position & !last_char_in_level_string_reached & first_level_reached) {
     cur_string <- add_cur_char_to_cur_string(closures[[level]], cur_string)
     string_list <- add_to_string_list(string_list, cur_string)
-    recurse_on_position_at_level(closures, string_list, level = level, cur_string = "", advance_position = T)
+    recurse_digits_to_strings(closures, string_list, level = level, cur_string = "", advance_position = T)
   } else
   # CASE 8  A=N   B=Y   C=Y   D=Y  Bottom clause of the common case (closures stack size > 1)
   if (!last_level_reached & advance_position & last_char_in_level_string_reached & first_level_reached) {
@@ -279,7 +279,7 @@ recurse_on_position_at_level <- function(closures, string_list, level, cur_strin
     string_list <- add_to_string_list(string_list, cur_string)
     set_pos_in_level_to_one(closures[[level]])
     cur_string <- str_sub(cur_string, 1, -3) # last two characters removed
-    recurse_on_position_at_level(closures, string_list, level = (level - 1), cur_string = cur_string, advance_position = T)
+    recurse_digits_to_strings(closures, string_list, level = (level - 1), cur_string = cur_string, advance_position = T)
   } else
   # CASE 7: A=Y     B=N     C=N    D=N  
   if (last_level_reached & !advance_position & !last_char_in_level_string_reached & !first_level_reached) {
@@ -287,23 +287,23 @@ recurse_on_position_at_level <- function(closures, string_list, level, cur_strin
     string_list <- add_to_string_list(string_list, cur_string)
     increase_pos_in_level(closures[[level]])
     cur_string <- str_sub(cur_string, 1, -3) # last two characters removed
-    recurse_on_position_at_level(closures, string_list, level = (level - 1), cur_string = cur_string, advance_position = F)
+    recurse_digits_to_strings(closures, string_list, level = (level - 1), cur_string = cur_string, advance_position = F)
   } else
   # CASE 9  A=N     B=Y     C=Y    D=N 
   if (!last_level_reached & advance_position & last_char_in_level_string_reached & !first_level_reached) {
     set_pos_in_level_to_one(closures[[level]])
     cur_string <- str_sub(cur_string, 1, -2) # last character removed
-    recurse_on_position_at_level(closures, string_list, level = (level - 1), cur_string = cur_string, advance_position = T)
+    recurse_digits_to_strings(closures, string_list, level = (level - 1), cur_string = cur_string, advance_position = T)
   } else
   # CASE 10:  A=N     B=Y     C=N  D=(Y|N)
   if (!last_level_reached & advance_position & !last_char_in_level_string_reached ) {
     cur_string <- add_cur_char_to_cur_string(closures[[level]], cur_string)
-    recurse_on_position_at_level(closures, string_list, level = (level + 1), cur_string = cur_string, advance_position = F)
+    recurse_digits_to_strings(closures, string_list, level = (level + 1), cur_string = cur_string, advance_position = F)
   } else
   # CASE 11: A=N     B=N  C=(Y|N) D=(Y|N)
   if (!last_level_reached & !advance_position) {
     cur_string <- add_cur_char_to_cur_string(closures[[level]], cur_string)
-    recurse_on_position_at_level(closures, string_list, level = (level + 1), cur_string = cur_string, advance_position = F)    
+    recurse_digits_to_strings(closures, string_list, level = (level + 1), cur_string = cur_string, advance_position = F)
   }
 }
 
@@ -328,7 +328,7 @@ recurse_tail_end_digits_to_strings <- trampoline(function(closures, string_list,
   if (last_level_reached & !advance_position & first_level_reached) { # length of the closure stack must be 1
     cur_string <- add_cur_char_to_cur_string(closures[[level]], cur_string)
     string_list <- add_to_string_list(string_list, cur_string)
-    final_string_list <- recurse_on_position_at_level(closures, string_list, level = 1, cur_string = "", advance_position = T)
+    final_string_list <- recurse_digits_to_strings(closures, string_list, level = 1, cur_string = "", advance_position = T)
     return(trim_first_empty_from_string_list(final_string_list))
   } else
   # CASE 1
@@ -387,11 +387,16 @@ to_vector_of_strings <- function(aStrigOfDigits) {
   vector_of_digits <- to_vector_of_digits_from_string(aStrigOfDigits)
   vec_of_level_strings <- to_vector_of_target_characters( vector_of_digits )
   closures <- lapply(X = vec_of_level_strings, FUN = function(level_string ) closure_creator( level_string ))
-  recurse_on_position_at_level(closures, list(""), 1, "")
+  recurse_digits_to_strings(closures, list(""), 1, "")
 }
 
 
-
+to_vector_of_strings_2 <- function(aStrigOfDigits) {
+  vector_of_digits <- to_vector_of_digits_from_string(aStrigOfDigits)
+  vec_of_level_strings <- to_vector_of_target_characters( vector_of_digits )
+  closures <- lapply(X = vec_of_level_strings, FUN = function(level_string ) closure_creator( level_string ))
+  recurse_tail_end_digits_to_strings(closures, list(""), 1, "")
+}
 
 # tests
 #vos1 <- to_vector_of_strings("92")
@@ -403,11 +408,18 @@ to_vector_of_strings <- function(aStrigOfDigits) {
 
 options(expressions = 500000)
 s_to_parse <- "43344"
-#s_to_parse <- "439522"
+s_to_parse_2 <- "4334472"
 print("======================================================================")
 print("Testing digit to strings conversion:")
 print(paste0("Entering ", s_to_parse))
 print("----------------------------------------------------------------------")
 vos4 <- to_vector_of_strings(s_to_parse)
 print(vos4)
+
+print("======================================================================")
+print("Testing tail-end recursive version of digit to strings conversion:")
+print(paste0("Entering ", s_to_parse_2))
+print("----------------------------------------------------------------------")
+vos5 <- to_vector_of_strings_2(s_to_parse_2)
+print(vos5)
 
