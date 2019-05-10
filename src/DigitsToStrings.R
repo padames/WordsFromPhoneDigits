@@ -147,6 +147,13 @@ recur <- function(...) {
   args
 }
 
+# trampoline has a while loop that executes the function argument until it is exited by reaching n==0
+# and then not satisfying the is.list(ret) condition.
+# trampoline returns a closure that is called with n and the dafualt value the first time and keeps
+# calling the argument 'f' passed when the closure is created until the while loop is terminated by reaching the bottom
+# clause (n==0).
+# The helper function 'recur' only updates the arguments as a list and assignes them to the function
+# used to create the closure
 fact <- trampoline(function(n, prod = 1) {
   if (n == 0) {
     prod
@@ -154,8 +161,11 @@ fact <- trampoline(function(n, prod = 1) {
     recur(n - 1, prod*n)
   }
 })
-number_to_factorial = 50L
+
+number_to_factorial = 70L
+print("----------------------------------------------------------------------")
 print(paste0("Factorial of ", number_to_factorial, " = ", fact(number_to_factorial)))
+print("----------------------------------------------------------------------")
 
 #=========================
 # Recursion
@@ -318,9 +328,9 @@ to_vector_of_strings <- function(aStrigOfDigits) {
 #print(vos3)
 
 options(expressions = 500000)
-#s_to_parse <- "43957"
-s_to_parse <- "439522"
+s_to_parse <- "43344"
+#s_to_parse <- "439522"
 print(paste0("Entering ", s_to_parse))
-#vos4 <- to_vector_of_strings(s_to_parse)
-#print(vos4)
+vos4 <- to_vector_of_strings(s_to_parse)
+print(vos4)
 
