@@ -1,5 +1,10 @@
-# Utility funcions to turn a positive integer into a list of strings
-# based on a given associatio between digits and chracters
+# Utility funcions to print all possible words from phone digits
+#
+# From https://www.geeksforgeeks.org/find-possible-words-phone-digits/ where this is solved recursively in C.
+# Before advent of QWERTY keyboards, texts and numbers were placed on the same key. For example 2 has “ABC” if we
+# wanted to write anything starting with ‘A’ we need to type key 2 once. If we wanted to type ‘B’, press key 2 twice
+# and thrice for typing ‘C’. below is picture of such keypad.
+
 # USAGE:
 #    > los <- to_list_of_strings(222)
 #    > los
@@ -14,12 +19,12 @@ library(stringr)
 characters_to_digit <- c(1,"a" = 2, "b" = 2,"c" = 2, "d" = 3, "e" = 3, "f" = 3,
                          "g" = 4, "h" = 4, "i" = 4, "j" = 5, "k" = 5, "l" = 5,
                          "m" = 6, "n" = 6, "o" = 6, "p" = 7, "q" = 7, "r" = 7, "s" = 7,
-                         "t" = 8, "u" = 8, "v" = 8, "w" = 9, "x" = 9, "y" = 9, "z" = 9, "+" = 0)
+                         "t" = 8, "u" = 8, "v" = 8, "w" = 9, "x" = 9, "y" = 9, "z" = 9, 0)
 
 
 digit_to_characters <- c("1" = "", "2" = "abc", "3" = "def", "4" = "ghi",
                          "5" = "jkl", "6" = "mno", "7" = "pqrs",
-                         "8" = "tuv", "9" = "wxyz", "0" = "+")
+                         "8" = "tuv", "9" = "wxyz", "0" = "")
 
 
 
@@ -408,7 +413,7 @@ to_vector_of_strings_2 <- function(aStrigOfDigits) {
 
 options(expressions = 500000)
 s_to_parse <- "43344"
-s_to_parse_2 <- "4334472"
+s_to_parse_2 <- "4032892922"
 print("======================================================================")
 print("Testing digit to strings conversion:")
 print(paste0("Entering ", s_to_parse))
