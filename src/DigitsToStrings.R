@@ -167,6 +167,24 @@ fact <- trampoline(function(n, prod = 1) {
   }
 })
 
+
+# second version optimized for faster execution eliminating the do.call
+trampoline2 <- function(f) {
+  function(...) {
+    ret <- f(...)
+    while (inherits(ret, "recursion")) {
+      ret <- eval(as.call(c(f, unclass(ret))))
+    }
+    ret
+  }
+}
+
+recur2 <- function(...) {
+  structure(list(...), class = "recursion")
+}
+
+
+
 number_to_factorial = 70L
 print("======================================================================")
 print(paste0("Factorial of ", number_to_factorial, " = ", fact(number_to_factorial)))
@@ -258,7 +276,7 @@ recurse_digits_to_strings <- function(closures, string_list, level, cur_string, 
   if (last_level_reached & !advance_position & first_level_reached) { # length of the closure stack must be 1
     cur_string <- add_cur_char_to_cur_string(closures[[level]], cur_string)
     string_list <- add_to_string_list(string_list, cur_string)
-    final_string_list <- recurse_on_position_at_level(closures, string_list, level = 1, cur_string = "", advance_position = T)
+    final_string_list <- recurse_digits_to_strings(closures, string_list, level = 1, cur_string = "", advance_position = T)
     return(trim_first_empty_from_string_list(final_string_list))
   } else
   # CASE 1
@@ -311,7 +329,7 @@ recurse_digits_to_strings <- function(closures, string_list, level, cur_string, 
   }
 }
 
-# Tail-end recursive version
+# Tail-end recursive version 1
 recurse_tail_end_digits_to_strings <- trampoline(function(closures, string_list, level, cur_string, advance_position=F) {
   # this will determine if we have exhausted all combinations
   if (length(closures) == 0L) { return("") } # the trivial case...nothing to parse
@@ -386,6 +404,80 @@ recurse_tail_end_digits_to_strings <- trampoline(function(closures, string_list,
 })
 
 
+# Tail-end recursive version 2
+recurse_tail_end_digits_to_strings_2 <- trampoline2(function(closures, string_list, level, cur_string, advance_position=F) {
+  # this will determine if we have exhausted all combinations
+  if (length(closures) == 0L) { return("") } # the trivial case...nothing to parse
+  
+  # compute this level's state
+  last_level_reached <- (level == length(closures))
+  last_char_in_level_string_reached = is_maxed(closures[[level]])
+  if (advance_position) {
+    increase_pos_in_level(closures[[level]])
+  }
+  
+  first_level_reached <- (level == 1L)
+  # CASES 2 & 4
+  if (last_level_reached & advance_position & !first_level_reached) {
+    stop("Illegal case: last level should never be called with 'advance_position'=T unless is a one-level closure stack")
+  } else
+  # CASE 5
+  if (last_level_reached & !advance_position & first_level_reached) { # length of the closure stack must be 1
+    cur_string <- add_cur_char_to_cur_string(closures[[level]], cur_string)
+    string_list <- add_to_string_list(string_list, cur_string)
+    final_string_list <- recurse_digits_to_strings(closures, string_list, level = 1, cur_string = "", advance_position = T)
+    return(trim_first_empty_from_string_list(final_string_list))
+  } else
+  # CASE 1
+  if (last_level_reached & advance_position & last_char_in_level_string_reached & first_level_reached) {
+    cur_string <- add_cur_char_to_cur_string(closures[[level]], cur_string)
+    string_list <- add_to_string_list(string_list, cur_string)
+    return(string_list) # the bottom clause for the case of one level in the closure stack
+  } else
+  # CASE 3
+  if (last_level_reached & advance_position & !last_char_in_level_string_reached & first_level_reached) {
+    cur_string <- add_cur_char_to_cur_string(closures[[level]], cur_string)
+    string_list <- add_to_string_list(string_list, cur_string)
+    recur2(closures, string_list, level = level, cur_string = "", advance_position = T)
+  } else
+    # CASE 8  A=N   B=Y   C=Y   D=Y  Bottom clause of the common case (closures stack size > 1)
+  if (!last_level_reached & advance_position & last_char_in_level_string_reached & first_level_reached) {
+    return(trim_first_empty_from_string_list(string_list))
+  } else
+  # CASE 6: A=Y     B=N     C=Y    D=N
+  if (last_level_reached & !advance_position & last_char_in_level_string_reached & !first_level_reached) {
+    cur_string <- add_cur_char_to_cur_string(closures[[level]], cur_string)
+    string_list <- add_to_string_list(string_list, cur_string)
+    set_pos_in_level_to_one(closures[[level]])
+    cur_string <- str_sub(cur_string, 1, -3) # last two characters removed
+    recur2(closures, string_list, level = (level - 1), cur_string = cur_string, advance_position = T)
+  } else
+  # CASE 7: A=Y     B=N     C=N    D=N
+  if (last_level_reached & !advance_position & !last_char_in_level_string_reached & !first_level_reached) {
+    cur_string <- add_cur_char_to_cur_string(closures[[level]], cur_string)
+    string_list <- add_to_string_list(string_list, cur_string)
+    increase_pos_in_level(closures[[level]])
+    cur_string <- str_sub(cur_string, 1, -3) # last two characters removed
+    recur2(closures, string_list, level = (level - 1), cur_string = cur_string, advance_position = F)
+  } else
+    # CASE 9  A=N     B=Y     C=Y    D=N
+  if (!last_level_reached & advance_position & last_char_in_level_string_reached & !first_level_reached) {
+      set_pos_in_level_to_one(closures[[level]])
+      cur_string <- str_sub(cur_string, 1, -2) # last character removed
+      recur2(closures, string_list, level = (level - 1), cur_string = cur_string, advance_position = T)
+  } else
+    # CASE 10:  A=N     B=Y     C=N  D=(Y|N)
+  if (!last_level_reached & advance_position & !last_char_in_level_string_reached ) {
+    cur_string <- add_cur_char_to_cur_string(closures[[level]], cur_string)
+    recur2(closures, string_list, level = (level + 1), cur_string = cur_string, advance_position = F)
+  } else
+  # CASE 11: A=N     B=N  C=(Y|N) D=(Y|N)
+  if (!last_level_reached & !advance_position) {
+    cur_string <- add_cur_char_to_cur_string(closures[[level]], cur_string)
+    recur2(closures, string_list, level = (level + 1), cur_string = cur_string, advance_position = F)
+  }
+})
+
 
 to_vector_of_strings <- function(aStrigOfDigits) {
   vector_of_digits <- to_vector_of_digits_from_string(aStrigOfDigits)
@@ -395,36 +487,81 @@ to_vector_of_strings <- function(aStrigOfDigits) {
 }
 
 
-to_vector_of_strings_2 <- function(aStrigOfDigits) {
+to_vector_of_strings_1 <- function(aStrigOfDigits) {
   vector_of_digits <- to_vector_of_digits_from_string(aStrigOfDigits)
   vec_of_level_strings <- to_vector_of_target_characters( vector_of_digits )
   closures <- lapply(X = vec_of_level_strings, FUN = function(level_string ) closure_creator( level_string ))
   recurse_tail_end_digits_to_strings(closures, list(""), 1, "")
 }
 
-# tests
-#vos1 <- to_vector_of_strings("92")
-#vos2 <- to_vector_of_strings("12")
-#vos3 <- to_vector_of_strings("234")
-#print(vos1)
-#print(vos2)
-#print(vos3)
+to_vector_of_strings_2 <- function(aStrigOfDigits) {
+  vector_of_digits <- to_vector_of_digits_from_string(aStrigOfDigits)
+  vec_of_level_strings <- to_vector_of_target_characters( vector_of_digits )
+  closures <- lapply(X = vec_of_level_strings, FUN = function(level_string ) closure_creator( level_string ))
+  recurse_tail_end_digits_to_strings_2(closures, list(""), 1, "")
+}
 
-options(expressions = 500000)
-s_to_parse <- "43344"
-s_to_parse_2 <- "4032892922"
+options(expressions = 500000) # this version is very inefficient 
+s_to_parse_1 <- "43344"
+s_to_parse_2 <- "4036179348"
 print("======================================================================")
 print("Testing digit to strings conversion:")
-print(paste0("Entering ", s_to_parse))
+print(paste0("Entering ", s_to_parse_1))
 print("----------------------------------------------------------------------")
-vos4 <- to_vector_of_strings(s_to_parse)
+vos4 <- to_vector_of_strings(s_to_parse_1)
 print(vos4)
 
-options(max.print = 50000)
+# Should produce:
+# [1] "======================================================================"
+# [1] "Factorial of 70 = 1.19785716699699e+100"
+# [1] "======================================================================"
+# [1] "Testing digit to strings conversion:"
+# [1] "Entering 43344"
+# [1] "----------------------------------------------------------------------"
+# [1] "gddgg" "gddgh" "gddgi" "gddhg" "gddhh" "gddhi" "gddig" "gddih" "gddii" "gdegg" "gdegh" "gdegi" "gdehg" "gdehh" "gdehi" "gdeig"
+# [17] "gdeih" "gdeii" "gdfgg" "gdfgh" "gdfgi" "gdfhg" "gdfhh" "gdfhi" "gdfig" "gdfih" "gdfii" "gedgg" "gedgh" "gedgi" "gedhg" "gedhh"
+# ...
+# [209] "iefgh" "iefgi" "iefhg" "iefhh" "iefhi" "iefig" "iefih" "iefii" "ifdgg" "ifdgh" "ifdgi" "ifdhg" "ifdhh" "ifdhi" "ifdig" "ifdih"
+# [225] "ifdii" "ifegg" "ifegh" "ifegi" "ifehg" "ifehh" "ifehi" "ifeig" "ifeih" "ifeii" "iffgg" "iffgh" "iffgi" "iffhg" "iffhh" "iffhi"
+
+
+options(max.print = 1000) # used in RStudio console to print until the end of large vectors
 print("======================================================================")
 print("Testing tail-end recursive version of digit to strings conversion:")
 print(paste0("Entering ", s_to_parse_2))
 print("----------------------------------------------------------------------")
-vos5 <- to_vector_of_strings_2(s_to_parse_2)
+vos5 <- to_vector_of_strings_1(s_to_parse_2)
 print(vos5)
 
+print("======================================================================")
+print("Testing tail-end recursive version of digit to strings conversion:")
+print(paste0("Entering ", "7"))
+print("----------------------------------------------------------------------")
+
+# Should produce:
+# [1] "======================================================================"
+# [1] "Testing tail-end recursive version of digit to strings conversion:"
+# [1] "Entering 4032892922"
+# [1] "----------------------------------------------------------------------"
+# [1] "gdatwawaa" "gdatwawab" "gdatwawac" "gdatwawba" "gdatwawbb" "gdatwawbc" "gdatwawca" "gdatwawcb" "gdatwawcc" "gdatwaxaa"
+# [11] "gdatwaxab" "gdatwaxac" "gdatwaxba" "gdatwaxbb" "gdatwaxbc" "gdatwaxca" "gdatwaxcb" "gdatwaxcc" "gdatwayaa" "gdatwayab"
+# ...
+# [34971] "ifcvzcxbc" "ifcvzcxca" "ifcvzcxcb" "ifcvzcxcc" "ifcvzcyaa" "ifcvzcyab" "ifcvzcyac" "ifcvzcyba" "ifcvzcybb" "ifcvzcybc"
+# [34981] "ifcvzcyca" "ifcvzcycb" "ifcvzcycc" "ifcvzczaa" "ifcvzczab" "ifcvzczac" "ifcvzczba" "ifcvzczbb" "ifcvzczbc" "ifcvzczca"
+# [34991] "ifcvzczcb" "ifcvzczcc"
+
+vos6 <- to_vector_of_strings_1("7")
+print(vos6)
+test3.expected.value <- c("p" ,"q", "r", "s")
+if (all(length(vos6) == length(test3.expected.value)) && all(vos6 == test3.expected.value)) {
+  print(paste0("Test 3: PASSED, found (", "'p'", "'q'", "'r'", "'s')", " as expected"))
+  } else {
+  print(paste0("Test 3: FAILED, (", "'p'", "'q'", "'r'", "'s')", " expected"))
+}
+      
+# Should produce:
+# [1] "======================================================================"
+# [1] "Testing tail-end recursive version of digit to strings conversion:"
+# [1] "Entering 7"
+# [1] "----------------------------------------------------------------------"
+# [1] "p" "q" "r" "s"
