@@ -56,6 +56,33 @@ For example given "123" as input, the algorithm would compute:
   > to_vector_of_strings("123")
 [1] "ad" "ae" "af" "bd" "be" "bf" "cd" "ce" "cf"
 ```
+
 Not impressed? :unamused:
+
 Me neither, until one realizes that this naive implementation hits a limit pretty quickly by consuming the memory allowed by R to store the function stack every time you call it. The maximum number of digits that can handle is 5 digits and phone numbers in North America have 10 digits.
  
+Then I found this [RStudio Community thread](https://community.rstudio.com/t/tidiest-way-to-do-recursion-safely-in-r/1408) on how to do recursion properly in R. Incredulous, I tested it computing the factorial of 70 using a naive recursive implementation and their trampolin function pattern to make it tail-end recursive:
+
+```
+1] "Factorial of 70 = 1.19785716699699e+100"
+```
+
+It result appeared in a blur so I implemnted my function as a trampolin and voilá, 10-digit number like `"4039282922"` was transformed into a vector of 34,992 words occupying 2.24 MB in memory in an average time slightly under 12 seconds for my laptop and R version:
+
+  ```
+  > vos7 <- to_vector_of_strings_3("4039282922")
+  > object.size(vos7)
+  2239528 bytes
+  > length(vos7)
+  [1] 34992
+  > library(microbenchmark)
+  > microbenchmark(to_vector_of_strings_3("4039282922"),times = 10L)
+  Unit: seconds
+                                 expr      min       lq     mean   median       uq      max neval
+  to_vector_of_strings_3("4039282922") 11.59465 11.69502 12.11465 11.91282 12.31519 13.70905    10
+  > c(version$platform, version$version.string)
+  [1] "x86_64-pc-linux-gnu"          "R version 3.4.4 (2018-03-15)"
+  ```
+
+
+
