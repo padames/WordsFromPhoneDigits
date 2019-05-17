@@ -59,15 +59,15 @@ For example given "123" as input, the algorithm would compute:
 
 Not impressed? :unamused:
 
-Me neither, until one realizes that this naive implementation hits a limit pretty quickly by consuming the memory allowed by R to store the function stack every time you call it. The maximum number of digits that can handle is 5 digits and phone numbers in North America have 10 digits.
+Me neither, until one realizes that this naive implementation hits a memory limit pretty quickly, input strings of more than 5 digits cannot be processed, clearly a show stopper with phone numbers in North America having 10 digits. The limit comes from R consuming the memory allocated to store the function calls. This is typical of implementations and/or compilers that don't reuse the same function stack frame to avoid stack overflow errors. The optimization is based on storing only one function frame and reusing it every time is called, this asumes the function is stateless, re-entrant, and exhastive in its domain (a sound recursive implementation should meet these requirements). With this optimization the compiler only keeps track of the inputs at every state so there are no huge thunks of code waiting to be executed upon hitting the bottom clause of the recursion where everything starts to get unwound.
  
-Then I found this [RStudio Community thread](https://community.rstudio.com/t/tidiest-way-to-do-recursion-safely-in-r/1408) on how to do recursion properly in R. Incredulous, I tested it computing the factorial of 70 using a naive recursive implementation and their trampolin function pattern to make it tail-end recursive:
+Then I found this [RStudio Community thread](https://community.rstudio.com/t/tidiest-way-to-do-recursion-safely-in-r/1408) on how to do recursion properly in R. Incredulous, I tested it by computing the factorial of 70 using a naive recursive implementation and their trampolin function pattern to make it tail-end recursive, this test would confirm that the R interpreter optimized the recursive pattern avoiding stack overflow errors:
 
 ```
 1] "Factorial of 70 = 1.19785716699699e+100"
 ```
 
-It result appeared in a blur so I implemnted my function as a trampolin and voilá, 10-digit number like `"4039282922"` was transformed into a vector of 34,992 words occupying 2.24 MB in memory in an average time slightly under 12 seconds for my laptop and R version:
+The result appeared in a blur so I implemnted my function with the trampolin pattern and voilá, a 10-digit number like `"4039282922"` was transformed into a vector of 34,992 words occupying 2.24 MB in memory in an average time slightly under 12 seconds for my laptop and R version:
 
   ```
   > vos7 <- to_vector_of_strings_3("4039282922")
