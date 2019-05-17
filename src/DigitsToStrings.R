@@ -152,6 +152,21 @@ recur <- function(...) {
   args
 }
 
+# second version optimized for faster execution eliminating the do.call
+trampoline2 <- function(f) {
+  function(...) {
+    ret <- f(...)
+    while (inherits(ret, "recursion")) {
+      ret <- eval(as.call(c(f, unclass(ret))))
+    }
+    ret
+  }
+}
+
+recur2 <- function(...) {
+  structure(list(...), class = "recursion")
+}
+
 # trampoline has a while loop that executes the function argument until it is exited by reaching n==0
 # and then not satisfying the is.list(ret) condition.
 # trampoline returns a closure that is called with n and the dafualt value the first time and keeps
@@ -167,21 +182,6 @@ fact <- trampoline(function(n, prod = 1) {
   }
 })
 
-
-# second version optimized for faster execution eliminating the do.call
-trampoline2 <- function(f) {
-  function(...) {
-    ret <- f(...)
-    while (inherits(ret, "recursion")) {
-      ret <- eval(as.call(c(f, unclass(ret))))
-    }
-    ret
-  }
-}
-
-recur2 <- function(...) {
-  structure(list(...), class = "recursion")
-}
 
 
 
